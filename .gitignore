@@ -1,4 +1,5 @@
 astron.egg-info/
 venv/
+.idea/
 *.exe
 *.so
