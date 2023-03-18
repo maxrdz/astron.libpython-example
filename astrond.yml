@@ -1,0 +1,60 @@
+# The Daemon section describes identification information which can be queried from the MD.
+daemon:
+    name: Core Message Director # To be used in page titles and intra-MD links.
+
+
+# The General section contains config settings that are shared among daemons in the cluster.
+general:
+    # An "IP:port" for the Event Logger to be used when logging global events.
+    eventlogger: 127.0.0.1:9090
+    # A list of DC files to be loaded.
+    #     NOTE: Order is sensitive, DC files loaded in a different order will not match.
+    dc_files:
+        - test.dc
+
+
+# (Just DOGs; Only one almighty UberDOG exists in an astron cluster.)
+uberdogs:
+  - id: 20000
+    class: AnonymousContact
+    anonymous: true
+
+
+messagedirector:
+    bind: 127.0.0.1:7199
+
+
+roles:
+    # For example, let's have a client agent which listens on port 6667 on all interfaces:
+    - type: clientagent
+      bind: 127.0.0.1:6667
+      # Manual_dc_hash tells the server what DC hash version to expect from the client.
+      #     This is mostly used if the DC parser used by the client doesn't have hash parity
+      #     with the parser used by Astron. (Panda3D users will currently need to enable this).
+      #manual_dc_hash: 0xABCD1234
+      version: "Test v1.0"
+      
+      client:
+        # Type declares which client this client agent should generate when it receives a new
+        # connection.  By default, it is a "libastron" client which accepts connections from a
+        # client using the libastron ClientRepository library.
+        type: libastron
+        # Relocate allows a client to send a ClientObjectLocation message to the server to
+        # indicate it would like to change the location of an object owned by that client.
+        # This is a feature specific to the Astron client, a custom client class
+        # could define its own set of configuration values.
+        relocate: true # Default: false
+        add_interest: disabled
+      # Channels defines the range of channels this clientagent can assign to Clients
+      channels:
+          min: 100100
+          max: 299999
+
+    # Next we'll have a state server, whose control channel is 402000.
+    - type: stateserver
+      control: 402000
+
+    - type: eventlogger
+      bind: 127.0.0.1:9090 # REMEMBER: UDP
+      output: ./el/events-%Y-%m-%d-%H-%M-%S.log # This is a time format.
+      rotate_interval: 1d # Rotate the logs daily.

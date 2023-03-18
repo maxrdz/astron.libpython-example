@@ -1,0 +1,4 @@
+astron.egg-info/
+venv/
+*.exe
+*.so

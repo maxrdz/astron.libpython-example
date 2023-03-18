@@ -1,0 +1,4 @@
+astron==0.0
+enum==0.4.7
+eventlet==0.23.0
+panda3d==1.10.13

@@ -1,0 +1,29 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="1">
+            <item index="0" class="java.lang.String" itemvalue="Panda3D" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="bobos.bobobase.StartBase.base" />
+          <option value="bobos.bobo.DistributedBobo.base" />
+          <option value="bobos.launcher.Launcher.base" />
+          <option value="bobos.bobosgui.PopupPrompt.base" />
+          <option value="bobos.bobosgui.LoadingScreen.base" />
+          <option value="bobos.bobosgui.LaunchScreen.base" />
+          <option value="bobos.bobobase.ClientRepository.base" />
+          <option value="bobos.bobosgui.BaseGUI.base" />
+          <option value="bobos.bobosgui.BobosBaseGUI.base" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
