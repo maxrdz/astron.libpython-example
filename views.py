@@ -256,10 +256,13 @@ class DistributedAvatarAI(DistributedObject):
         if __PANDA_RUNNING__:
             base.taskMgr.remove(self.update_task)
 
-    def indicate_intent(self, heading, speed):
+    def indicate_intent(self, client_channel, heading, speed):
         if (heading < -1.0) or (heading > 1.0) or (speed < -1.0) or (speed > 1.0):
-            # Client is cheating!
-            # TODO: Eject client
+            """
+            The client is cheating! It has sent a heading or speed that is not in its programmed range.
+            Disconnect Code 152 is for rules violation; read at Astron/docs/protocol/10-client.md.
+            """
+            self.send_CLIENTAGENT_EJECT(client_channel, 152, "Argument values out of range.")
             return
         self.heading = heading
         self.speed = speed
