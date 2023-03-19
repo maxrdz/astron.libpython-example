@@ -44,8 +44,8 @@ class SimpleClient(ShowBase):
         self.notify.info("Connecting...")
         self.repo.connect(self.connection_success, self.connection_failure, self.connection_eject,
                           host=CA_HOST, port=CA_PORT)
-        # set task to poll datagrams DG_POLL_RATE times per second
-        self.task_mgr.doMethodLater((1000.0 / float(DG_POLL_RATE)) / 1000.0, self.poll_datagrams, 'poll dg')
+        # set task to poll datagrams every frame
+        self.task_mgr.add(self.poll_datagrams, 'poll datagrams')
 
     def poll_datagrams(self, task):
         self.repo.poll_till_empty()

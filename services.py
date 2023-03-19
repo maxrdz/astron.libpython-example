@@ -19,7 +19,9 @@ class Services:
 
         while True:
             self.ir.poll_till_empty()
-            sleep((1000.0 / float(DG_POLL_RATE)) / 1000.0)
+            for i in range(len(AI_TASKS)):
+                AI_TASKS[i]()  # execute tasks per server frame
+            sleep(1.0 / float(AI_FRAME_RATE))
 
     def connection_failure(self):
         print("Connection failure! Is the Message Director up?")

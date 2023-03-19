@@ -171,24 +171,12 @@ class DistributedWorldAI(DistributedObject):
         # We're always using the interest_id 0 because different
         # clients use different ID spaces, so why make things more
         # complicated?
-        self.repo.send_CLIENTAGENT_ADD_INTEREST(client_id, 0, 0, 0)
+        self.repo.send_CLIENTAGENT_ADD_INTEREST(client_id, 0, DistributedWorldId, 0)
         # Set its owner to the client, upon which in the Clients repo
         # magically OV (OwnerView) is generated.
         self.repo.send_STATESERVER_OBJECT_SET_OWNER(avatar_doid, client_id)
         # Declare this to be a session object.
         self.repo.send_CLIENTAGENT_ADD_SESSION_OBJECT(self.do_id, client_id)
-
-
-"""
-class DistributedWorldUD(DistributedObject):
-    def init(self):
-        print(datetime.now().strftime("%H:%M:%S") + " DistributedWorldUD.init() for " + str(self.do_id))
-
-    def create_avatar(self, client_id):
-        print(datetime.now().strftime("%H:%M:%S") +
-              " DistributedWorldUD.create_avatar(" + str(client_id) + ") in " + str(self.do_id))
-        self.send_update("create_avatar", client_id)
-"""
 
 
 # -------------------------------------------------------------------
@@ -203,7 +191,7 @@ class DistributedAvatar(DistributedObject):
         print("DistributedAvatar.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
         if __PANDA_RUNNING__:
             self.model = base.loader.loadModel("./resources/smiley.egg")
-            self.model.reparent_to(self)
+            self.model.reparent_to(base.render)
             self.model.set_h(180.0)
             # Signal local client that this is its avatar
             base.messenger.send("distributed_avatar", [self])
@@ -245,16 +233,21 @@ class DistributedAvatarAE(DistributedObject):
 class DistributedAvatarAI(DistributedObject):
     def init(self):
         print("DistributedAvatarAI.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
-        self.heading = 0.0
-        self.speed = 0.0
-
-        if __PANDA_RUNNING__:
-            self.update_task = base.taskMgr.add(self.update_position, "Avatar position update")
+        """
+        Since we don't have a Panda `NodePath` object as a Panda3D independent service,
+        we have to define our own x, y, z, and h variables to keep track of.
+        """
+        self.x, self.y, self.z, self.h = 0.0, 0.0, 0.0, 0.0
+        """
+        Heading and speed are kept in a range of -1 to 1. (-1 <= n <= 1)
+        This value is sent by the client, and is checked to be in range to prevent cheating.
+        """
+        self.heading, self.speed = 0, 0
+        # Append `update_position()` method to tasks (ran every 'server frame')
+        AI_TASKS.append(self.update_position)
 
     def delete(self):
-        print(datetime.now().strftime("%H:%M:%S") + " DistributedAvatarAI.delete() for " + str(self.do_id))
-        if __PANDA_RUNNING__:
-            base.taskMgr.remove(self.update_task)
+        print("DistributedAvatarAI.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
 
     def indicate_intent(self, client_channel, heading, speed):
         if (heading < -1.0) or (heading > 1.0) or (speed < -1.0) or (speed > 1.0):
@@ -264,26 +257,23 @@ class DistributedAvatarAI(DistributedObject):
             """
             self.send_CLIENTAGENT_EJECT(client_channel, 152, "Argument values out of range.")
             return
-        self.heading = heading
-        self.speed = speed
+        self.heading, self.speed = heading, speed
+
+    def set_xyzh(self, x, y, z, h):
+        self.send_update('set_xyzh', x, y, z, h)
 
     def update_position(self):
-        """
-        We don't have to check if we're running Panda here, because
-        this function is only used as a callback when set as a task @ init.
-        """
         if (self.heading != 0.0) or (self.speed != 0.0):
-            dt = base.clock.get_dt()
-            self.model.set_h((self.model.get_h() + self.heading * avatar_rotation_speed * dt) % 360.0)
-            self.model.set_y(self, self.speed * avatar_speed * dt)
-            if self.model.get_x() < -10.0:
-                self.model.set_x(-10.0)
-            if self.model.get_x() > 10.0:
-                self.model.set_x(10.0)
-            if self.model.get_y() < -10.0:
-                self.model.set_y(-10.0)
-            if self.model.get_y() > 10.0:
-                self.model.set_y(10.0)
-            self.model.set_xyzh(self.model.get_x(), self.model.get_y(), self.model.get_z(), self.model.get_h())
-            self.send_update('set_xyzh', self.x, self.y, self.z, self.h)
-        return Task.cont
+            dt = 1000.0 / float(AI_FRAME_RATE)  # FIXME: get real accurate delta time
+            self.h = (self.h + (self.heading / 10) * avatar_rotation_speed * dt) % 360.0
+            self.y = (self.speed / 10) * avatar_speed * dt
+            if self.x < -10.0:
+                self.x = -10.0
+            if self.x > 10.0:
+                self.x = 10.0
+            if self.y < -10.0:
+                self.y = -10.0
+            if self.y > 10.0:
+                self.y = 10.0
+            # TODO: Send int16 values instead of float64 over the wire.
+            self.set_xyzh(self.x, self.y, self.z, self.h)

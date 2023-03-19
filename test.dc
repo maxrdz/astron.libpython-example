@@ -35,6 +35,6 @@ dclass DistributedWorld {
 // position and heading.
 dclass DistributedAvatar {
   // FIXME: Can't use 'required' key @ `set_xyzh()` field due to libastron.python incomplete implementation.
-  set_xyzh(int16 / 1000, int16 / 1000, int16 / 1000, int16 / 50) broadcast;
+  set_xyzh(float64 x, float64 y, float64 z, float64 h) broadcast;
   indicate_intent(int16 / 10, int16 / 10) ownsend airecv;
 };

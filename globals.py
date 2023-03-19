@@ -1,6 +1,7 @@
 VERSION_STRING = 'Test v1.0'
 DC_FILE = 'test.dc'
-DG_POLL_RATE = 30
+AI_FRAME_RATE = 30.0
+AI_TASKS = []
 
 # Network
 CA_HOST = "127.0.0.1"
