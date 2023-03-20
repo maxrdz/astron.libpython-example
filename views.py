@@ -1,5 +1,7 @@
 from astron.object_repository import DistributedObject
 from globals import *
+import random
+import math
 
 """
 Note: Your IDE may highlight errors on this file due to sections
@@ -160,7 +162,7 @@ class DistributedWorldAI(DistributedObject):
         print("DistributedWorldAI.create_avatar(" + str(client_id) + ") for %d in (%d, %d)" %
               (self.do_id, self.parent, self.zone))
         # Create the avatar
-        avatar_doid = 1562640  # FIXME: Generate actual random channel for new do_id
+        avatar_doid = random.randint(1500000, 1599999)  # FIXME: Generate actual random channel for new do_id
         self.repo.create_distobj('DistributedAvatar', avatar_doid, self.do_id, 0)
         # Set the client to be interested in our zone 0. He can't do
         # that himself (or rather: shouldn't be allowed to) as he has
@@ -189,7 +191,6 @@ class DistributedAvatar(DistributedObject):
         if __PANDA_RUNNING__:
             self.model = base.loader.loadModel("./resources/smiley.egg")
             self.model.reparent_to(base.render)
-            self.model.set_h(180.0)
             # Signal local client that this is its avatar
             base.messenger.send("distributed_avatar", [self])
 
@@ -207,9 +208,8 @@ class DistributedAvatarOV(DistributedObject):
         if __PANDA_RUNNING__:
             self.model = base.loader.loadModel("./resources/smiley.egg")
             self.model.reparent_to(base.render)
-            self.model.set_h(180.0)
             base.camera.reparent_to(self.model)
-            base.camera.set_pos(0, -20, 10)
+            base.camera.set_pos(0, 20, 10)
             base.camera.look_at(0, 0, 0)
             # Signal to client that its received its avatar OV
             base.messenger.send("avatar_ov", [self])
@@ -259,14 +259,22 @@ class DistributedAvatarAI(DistributedObject):
             return
         self.heading, self.speed = heading, speed
 
-    def set_xyzh(self, x, y, z, h):
-        self.send_update('set_xyzh', x, y, z, h)
-
     def update_position(self):
         if (self.heading != 0.0) or (self.speed != 0.0):
-            dt = 1000.0 / float(AI_FRAME_RATE)  # FIXME: get real accurate delta time
-            self.h = (self.h + (self.heading / 10) * avatar_rotation_speed * dt) % 360.0
-            self.y = (self.speed / 10) * avatar_speed * dt
+
+            dt = 1.0 / float(AI_FRAME_RATE)  # FIXME: get real accurate delta time
+            degrees = 360.0
+            if self.heading < 0:  # FIXME: Probably limit heading to 0-360 range
+                degrees *= -1.0
+            self.h += (self.heading * avatar_rotation_speed * dt) % degrees
+
+            h_radians = math.radians(self.h)  # Convert heading to rads to get look vector using trig
+            look_vector = [math.cos(h_radians), math.sin(h_radians), 0]  # Vec3 (x, y, z)
+            speed_factor = self.speed * avatar_speed * dt
+
+            self.y += (look_vector[1] * speed_factor)
+            self.x += (look_vector[0] * speed_factor)
+
             if self.x < -10.0:
                 self.x = -10.0
             if self.x > 10.0:
@@ -276,4 +284,4 @@ class DistributedAvatarAI(DistributedObject):
             if self.y > 10.0:
                 self.y = 10.0
             # TODO: Send int16 values instead of float64 over the wire.
-            self.set_xyzh(self.x, self.y, self.z, self.h)
+            self.send_update('set_xyzh', self.x, self.y, self.z, self.h)

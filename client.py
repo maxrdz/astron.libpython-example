@@ -112,7 +112,7 @@ class SimpleClient(ShowBase):
 
     # A DistributedAvatarOV was created, here is it.
     def get_avatar(self, owner_view):
-        print("Received avatar OV in client")
+        print("Received DistributedAvatarOV in client")
         self.avatar_ov = owner_view
         self.taskMgr.add(self.complete_avatar, 'complete avatar')
 
@@ -121,14 +121,13 @@ class SimpleClient(ShowBase):
             self.avatar_ready = True
             return Task.done
         except KeyError:
-            print("Couldn't complete avatar " + str(self.avatar_ov.do_id) +
-                  ", available DOs: " + ", ".join([str(doId) for doId in self.repo.distributed_objects.keys()]))
+            print("Couldn't complete DistributedAvatarOV " + str(self.avatar_ov.do_id) + ", Available DOs: ".join(
+                [str(self.avatar_ov.do_id) for self.avatar_ov.do_id in self.repo.distributed_objects.keys()]))
             return Task.cont
 
     # A DistributedAvatar was created, here is it.
     def get_distributed_avatar(self, avatar):
-        print("Received avatar " + str(avatar.doId))
-        avatar.reparent_to(self.map)
+        print("Received DistributedAvatar " + str(avatar.do_id))
 
 
 if __name__ == "__main__":
