@@ -1,6 +1,12 @@
 from astron.object_repository import DistributedObject
 from globals import *
 
+"""
+Note: Your IDE may highlight errors on this file due to sections
+that use the Panda3D module. You can ignore these errors as these
+sections only run on the Panda clients, and will not run in services.
+"""
+
 avatar_speed = 3.0
 avatar_rotation_speed = 90.0
 __PANDA_RUNNING__ = False
@@ -202,8 +208,11 @@ class DistributedAvatarOV(DistributedObject):
             self.model = base.loader.loadModel("./resources/smiley.egg")
             self.model.reparent_to(base.render)
             self.model.set_h(180.0)
+            base.camera.reparent_to(self.model)
+            base.camera.set_pos(0, -20, 10)
+            base.camera.look_at(0, 0, 0)
             # Signal to client that its received its avatar OV
-            base.messenger.send("avatar", [self])
+            base.messenger.send("avatar_ov", [self])
 
     def delete(self):
         print("DistributedAvatarOV.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))

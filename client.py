@@ -23,7 +23,7 @@ class SimpleClient(ShowBase):
         # FIXME: These values will be off the kilter if keys are pressed when the client starts.
         self.movement_heading = 0
         self.movement_speed = 0
-        self.accept("avatar", self.get_avatar)
+        self.accept("avatar_ov", self.get_avatar)
         self.accept("distributed_avatar", self.get_distributed_avatar)
         self.accept("w", self.indicate_movement, [0, 1])
         self.accept("w-up", self.indicate_movement, [0, -1])
@@ -118,9 +118,6 @@ class SimpleClient(ShowBase):
 
     def complete_avatar(self, task):
         try:
-            self.camera.reparent_to(self.avatar_ov.model)
-            self.camera.set_pos(0, -20, 10)
-            self.camera.look_at(0, 0, 0)
             self.avatar_ready = True
             return Task.done
         except KeyError:
