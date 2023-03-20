@@ -1,5 +1,4 @@
 from astron.object_repository import DistributedObject
-from datetime import datetime
 from globals import *
 
 avatar_speed = 3.0
@@ -11,14 +10,14 @@ try:  # If base built-in is defined (running on client), import Panda classes
         __PANDA_RUNNING__ = True
         from direct.task.Task import Task
 except NameError:
-    pass  # we're a service
+    pass  # we're a panda-less service
 
 
-# -------------------------------------------------------------------
+# -------------------------------------------------------
 # Root
-# * Is a container for top-level objects, especially the world and
-#   services.
-# -------------------------------------------------------------------
+# * Is a container for top-level objects,
+#   especially the world and services.
+# -------------------------------------------------------
 
 class Root(DistributedObject):
     def init(self):
@@ -35,13 +34,13 @@ class RootAE(DistributedObject):
         print("RootAE.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
 
 
-# -------------------------------------------------------------------
-# PointOfContact
-# * Is the only DOG, and is the only distobj that a player can
+# ---------------------------------------------------------------
+# AnonymousContact
+# * Is the only DOG, and is the only DO that a player can
 #   contact before logging in.
-# * Has interest in LoginServices
-# * Redirects player logins to a LoginService, if possible.
-# -------------------------------------------------------------------
+# * Has interest in the Login zone under Root
+# * Redirects player logins to a LoginManager, if possible.
+# ---------------------------------------------------------------
 
 class AnonymousContact(DistributedObject):
     def init(self):
@@ -73,27 +72,26 @@ class AnonymousContactUD(DistributedObject):
             self.login_manager = view
 
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------
 # LoginManager
 # * Registers a DistributedWorld
 # * Authenticates Clients
 # * Makes DistributedWorld create an avatar for new Clients.
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------
 
 class LoginManager(DistributedObject):  # Not used in client
     def init(self):
-        print(datetime.now().strftime("%H:%M:%S") + " LoginManager.init() for " + str(self.do_id))
+        print("LoginManager.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
 
 
 class LoginManagerAE(DistributedObject):
     def init(self):
-        print(datetime.now().strftime("%H:%M:%S") + " LoginManagerAE.init() for " + str(self.do_id))
+        print("LoginManagerAE.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
         self.add_ai_interest(RootID, WORLD_ZONE)
 
     def login(self, client_channel, username, password):
-        print(datetime.now().strftime("%H:%M:%S") +
-              " LoginManagerUD.login(" + username + ", <password>)  in " +
-              str(self.do_id) + " for client " + str(client_channel))
+        print("LoginManagerAE.login(" + username + ", <PASSWORD>) for %d in (%d, %d) for client %s" %
+              (self.do_id, self.parent, self.zone, str(client_channel)))
 
         if (username == "guest") and (password == "guest"):
             # Authenticate a client
@@ -110,7 +108,7 @@ class LoginManagerAE(DistributedObject):
             # "122" is the magic number for login problems.
             # See https://github.com/Astron/Astron/blob/master/doc/protocol/10-client.md
             self.send_CLIENTAGENT_EJECT(client_channel, 122, "Bad credentials")
-            print("Ejecting client for bad credentials (user: %s)", username)
+            print("Ejecting client for bad credentials (user: %s)" % username)
 
     def interest_distobj_ai_enter(self, view, do_id, parent_id, zone_id):
         if do_id == DistributedWorldId:
@@ -123,24 +121,17 @@ class LoginManagerAI(DistributedObject):
         print("LoginManagerAI.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
 
     def login(self, username, password):
-        print(datetime.now().strftime("%H:%M:%S") +
-              " LoginManagerAE.login(" + username + ", <password>) in " + str(self.do_id))
+        print("LoginManagerAI.login(" + username + ", <password>) for %d in (%d, %d)" %
+              (self.do_id, self.parent, self.zone))
         self.send_update("login", username, password)
 
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------
 # DistributedWorld
 # * has all avatars in its zone 0
 # * generates new avatars
-# -------------------------------------------------------------------
+# ----------------------------------------------------
 
-# class DistributedWorld(DistributedObject):
-#    def init(self):
-#        print(datetime.now().strftime("%H:%M:%S")+" DistributedWorld.init() for " + str(self.do_id))
-
-# class DistributedWorldOV(DistributedObjectOV):
-#    def init(self):
-#        print(datetime.now().strftime("%H:%M:%S")+" DistributedWorldOV.init() for " + str(self.do_id))
 
 class DistributedWorld(DistributedObject):
     def init(self):
@@ -160,8 +151,8 @@ class DistributedWorldAI(DistributedObject):
         print("DistributedWorldAI.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
 
     def create_avatar(self, client_id):
-        print(datetime.now().strftime("%H:%M:%S") +
-              " DistributedWorldAI.create_avatar(" + str(client_id) + ") in " + str(self.do_id))
+        print("DistributedWorldAI.create_avatar(" + str(client_id) + ") for %d in (%d, %d)" %
+              (self.do_id, self.parent, self.zone))
         # Create the avatar
         avatar_doid = 1562640  # FIXME: Generate actual random channel for new do_id
         self.repo.create_distobj('DistributedAvatar', avatar_doid, self.do_id, 0)
@@ -197,7 +188,7 @@ class DistributedAvatar(DistributedObject):
             base.messenger.send("distributed_avatar", [self])
 
     def delete(self):
-        print(datetime.now().strftime("%H:%M:%S") + " DistributedAvatar.delete() for " + str(self.do_id))
+        print("DistributedAvatar.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
 
     def set_xyzh(self, x, y, z, h):
         if __PANDA_RUNNING__:
@@ -215,7 +206,7 @@ class DistributedAvatarOV(DistributedObject):
             base.messenger.send("avatar", [self])
 
     def delete(self):
-        print(datetime.now().strftime("%H:%M:%S") + " DistributedAvatarOV.delete() for " + str(self.do_id))
+        print("DistributedAvatarOV.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
 
     def indicate_intent(self, heading, speed):
         self.send_update("indicate_intent", heading, speed)
