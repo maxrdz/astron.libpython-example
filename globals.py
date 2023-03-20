@@ -1,5 +1,5 @@
-VERSION_STRING = 'Test v1.0'
-DC_FILE = 'test.dc'
+VERSION_STRING = 'libastron Example v1.0'
+DC_FILE = 'example.dc'
 AI_FRAME_RATE = 30.0
 AI_TASKS = []
 

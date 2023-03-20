@@ -10,7 +10,7 @@ general:
     # A list of DC files to be loaded.
     #     NOTE: Order is sensitive, DC files loaded in a different order will not match.
     dc_files:
-        - test.dc
+        - example.dc
 
 
 # (Just DOGs; Only one almighty UberDOG exists in an astron cluster.)
@@ -32,7 +32,7 @@ roles:
       #     This is mostly used if the DC parser used by the client doesn't have hash parity
       #     with the parser used by Astron. (Panda3D users will currently need to enable this).
       #manual_dc_hash: 0xABCD1234
-      version: "Test v1.0"
+      version: "libastron Example v1.0"
       
       client:
         # Type declares which client this client agent should generate when it receives a new
