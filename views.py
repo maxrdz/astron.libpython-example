@@ -175,7 +175,7 @@ class DistributedWorldAI(DistributedObject):
         # magically OV (OwnerView) is generated.
         self.repo.send_STATESERVER_OBJECT_SET_OWNER(avatar_doid, client_id)
         # Declare this to be a session object.
-        self.repo.send_CLIENTAGENT_ADD_SESSION_OBJECT(self.do_id, client_id)
+        self.repo.send_CLIENTAGENT_ADD_SESSION_OBJECT(avatar_doid, client_id)
 
 
 # -------------------------------------------------------------------
