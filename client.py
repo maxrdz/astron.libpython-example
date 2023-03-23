@@ -83,7 +83,7 @@ class SimpleClient(ShowBase):
     def client_is_handshaked(self):
         anonymous_contact = self.repo.create_distobjglobal_view("AnonymousContact", AnonymousContactID)
         # Attach map to scene graph
-        self.map = self.loader.loadModel("./resources/map.egg")
+        self.map = self.loader.load_model("./resources/map.egg")
         self.map.reparent_to(self.render)
         # Log in and receive; leads to enter_owner (ownership of avatar)
         anonymous_contact.login("guest", "guest")

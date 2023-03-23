@@ -189,24 +189,27 @@ class DistributedAvatar(DistributedObject):
     def init(self):
         print("DistributedAvatar.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
         if __PANDA_RUNNING__:
-            self.model = base.loader.loadModel("./resources/smiley.egg")
+            self.model = base.loader.load_model("./resources/smiley.egg")
             self.model.reparent_to(base.render)
             # Signal local client that this is its avatar
             base.messenger.send("distributed_avatar", [self])
 
     def delete(self):
         print("DistributedAvatar.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
+        if __PANDA_RUNNING__:
+            self.model.remove_node()
 
     def set_xyzh(self, x, y, z, h):
         if __PANDA_RUNNING__:
-            self.model.set_xyzh(x, y, z, h)
+            self.model.set_pos(x, y, z)
+            self.model.set_h(h)
 
 
 class DistributedAvatarOV(DistributedObject):
     def init(self):
         print("DistributedAvatarOV.init() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
         if __PANDA_RUNNING__:
-            self.model = base.loader.loadModel("./resources/smiley.egg")
+            self.model = base.loader.load_model("./resources/smiley.egg")
             self.model.reparent_to(base.render)
             base.camera.reparent_to(self.model)
             base.camera.set_pos(0, 20, 10)
@@ -216,13 +219,16 @@ class DistributedAvatarOV(DistributedObject):
 
     def delete(self):
         print("DistributedAvatarOV.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
+        if __PANDA_RUNNING__:
+            self.model.remove_node()
 
     def indicate_intent(self, heading, speed):
         self.send_update("indicate_intent", heading, speed)
 
     def set_xyzh(self, x, y, z, h):
         if __PANDA_RUNNING__:
-            self.model.set_xyzh(x, y, z, h)
+            self.model.set_pos(x, y, z)
+            self.model.set_h(h)
 
 
 class DistributedAvatarAE(DistributedObject):
@@ -248,6 +254,7 @@ class DistributedAvatarAI(DistributedObject):
 
     def delete(self):
         print("DistributedAvatarAI.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
+        AI_TASKS.remove(self.update_position)
 
     def indicate_intent(self, client_channel, heading, speed):
         if (heading < -1.0) or (heading > 1.0) or (speed < -1.0) or (speed > 1.0):
@@ -269,11 +276,11 @@ class DistributedAvatarAI(DistributedObject):
             self.h += (self.heading * avatar_rotation_speed * dt) % degrees
 
             h_radians = math.radians(self.h)  # Convert heading to rads to get look vector using trig
-            look_vector = [math.cos(h_radians), math.sin(h_radians), 0]  # Vec3 (x, y, z)
+            look_vector = [math.sin(h_radians), math.cos(h_radians), 0]  # Vec3 (x, y, z)
             speed_factor = self.speed * avatar_speed * dt
 
-            self.y += (look_vector[1] * speed_factor)
             self.x += (look_vector[0] * speed_factor)
+            self.y += (look_vector[1] * speed_factor)
 
             if self.x < -10.0:
                 self.x = -10.0
