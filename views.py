@@ -1,7 +1,7 @@
 from astron.object_repository import DistributedObject
 from globals import *
+import numpy as np
 import random
-import math
 
 """
 Note: Your IDE may highlight errors on this file due to sections
@@ -248,7 +248,7 @@ class DistributedAvatarAI(DistributedObject):
         Heading and speed are kept in a range of -1 to 1. (-1 <= n <= 1)
         This value is sent by the client, and is checked to be in range to prevent cheating.
         """
-        self.heading, self.speed = 0, 0
+        self.turn, self.forward = 0, 0
         # Append `update_position()` method to tasks (ran every 'server frame')
         AI_TASKS.append(self.update_position)
 
@@ -256,36 +256,53 @@ class DistributedAvatarAI(DistributedObject):
         print("DistributedAvatarAI.delete() for %d in (%d, %d)" % (self.do_id, self.parent, self.zone))
         AI_TASKS.remove(self.update_position)
 
-    def indicate_intent(self, client_channel, heading, speed):
-        if (heading < -1.0) or (heading > 1.0) or (speed < -1.0) or (speed > 1.0):
+    def indicate_intent(self, client_channel, turn, forward):
+        if (turn < -1.0) or (turn > 1.0) or (forward < -1.0) or (forward > 1.0):
             """
             The client is cheating! It has sent a heading or speed that is not in its programmed range.
             Disconnect Code 152 is for rules violation; read at Astron/docs/protocol/10-client.md.
             """
             self.send_CLIENTAGENT_EJECT(client_channel, 152, "Argument values out of range.")
             return
-        self.heading, self.speed = heading, speed
+        self.turn, self.forward = turn, forward
 
     def update_position(self):
-        if (self.heading != 0.0) or (self.speed != 0.0):
+        if (self.turn != 0.0) or (self.forward != 0.0):
+            # Get delta time (an estimate)
+            dt = 1.0 / float(AI_FRAME_RATE)
 
-            dt = 1.0 / float(AI_FRAME_RATE)  # FIXME: get real accurate delta time
+            # Calculate new avatar heading
             degrees = 360.0
-            if self.heading < 0:  # FIXME: Probably limit heading to 0-360 range
+            if self.turn < 0:
                 degrees *= -1.0
-            self.h += (self.heading * avatar_rotation_speed * dt) % degrees
+            h_added = (self.turn * avatar_rotation_speed * dt) % degrees
+            if (self.h + h_added) >= 360.0:
+                self.h = (self.h + h_added) - 360.0
+            elif (self.h + h_added) < 0.0:
+                self.h = (self.h + h_added) + 360.0
+            else:
+                self.h += h_added
 
-            h_radians = math.radians(self.h)  # Convert heading to rads to get look vector using trig
-            look_vector = [math.sin(h_radians), math.cos(h_radians), 0]  # Vec3 (x, y, z)
-            speed_factor = self.speed * avatar_speed * dt
+            # Apply Z-axis Euler angle 4x4 matrix rotation to our avatar's matrix
+            h_rads = np.radians(self.h)
+            rotation_matrix = np.array([[np.cos(h_rads), -1 * np.sin(h_rads), 0.0, 0.0],
+                                        [np.sin(h_rads), np.cos(h_rads), 0.0, 0.0],
+                                        [0.0, 0.0, 1.0, 0.0],
+                                        [0.0, 0.0, 0.0, 1.0]])
 
-            self.x += (look_vector[0] * speed_factor)
-            self.y += (look_vector[1] * speed_factor)
+            local_vec = np.array([0.0, -1.0 * avatar_speed * self.forward * dt, 0.0, 1.0])
+            global_vec = np.matmul(rotation_matrix, local_vec)
 
+            self.x += np.round(global_vec[0], 5)
+            self.y += np.round(global_vec[1], 5)
+            self.z += np.round(global_vec[2], 5)
+
+            # limit x coord to (-10 < x < 10)
             if self.x < -10.0:
                 self.x = -10.0
             if self.x > 10.0:
                 self.x = 10.0
+            # limit y coord to (-10 < y < 10)
             if self.y < -10.0:
                 self.y = -10.0
             if self.y > 10.0:
