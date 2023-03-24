@@ -11,6 +11,7 @@ sections only run on the Panda clients, and will not run in services.
 
 avatar_speed = 3.0
 avatar_rotation_speed = 90.0
+pos_float_accuracy = 3
 __PANDA_RUNNING__ = False
 
 try:  # If base built-in is defined (running on client), import Panda classes
@@ -200,8 +201,11 @@ class DistributedAvatar(DistributedObject):
             self.model.remove_node()
 
     def set_xyzh(self, x, y, z, h):
+        divisor = float(pow(10, pos_float_accuracy))
+        float_x, float_y, float_z = float(x), float(y), float(z)
+        float_x, float_y, float_z = float_x / divisor, float_y / divisor, float_z / divisor,
         if __PANDA_RUNNING__:
-            self.model.set_pos(x, y, z)
+            self.model.set_pos(float_x, float_y, float_z)
             self.model.set_h(h)
 
 
@@ -226,8 +230,11 @@ class DistributedAvatarOV(DistributedObject):
         self.send_update("indicate_intent", heading, speed)
 
     def set_xyzh(self, x, y, z, h):
+        divisor = float(pow(10, pos_float_accuracy))
+        float_x, float_y, float_z = float(x), float(y), float(z)
+        float_x, float_y, float_z = float_x / divisor, float_y / divisor, float_z / divisor,
         if __PANDA_RUNNING__:
-            self.model.set_pos(x, y, z)
+            self.model.set_pos(float_x, float_y, float_z)
             self.model.set_h(h)
 
 
@@ -293,9 +300,9 @@ class DistributedAvatarAI(DistributedObject):
             local_vec = np.array([0.0, -1.0 * avatar_speed * self.forward * dt, 0.0, 1.0])
             global_vec = np.matmul(rotation_matrix, local_vec)
 
-            self.x += np.round(global_vec[0], 5)
-            self.y += np.round(global_vec[1], 5)
-            self.z += np.round(global_vec[2], 5)
+            self.x += np.round(global_vec[0], pos_float_accuracy)
+            self.y += np.round(global_vec[1], pos_float_accuracy)
+            self.z += np.round(global_vec[2], pos_float_accuracy)
 
             # limit x coord to (-10 < x < 10)
             if self.x < -10.0:
@@ -307,5 +314,9 @@ class DistributedAvatarAI(DistributedObject):
                 self.y = -10.0
             if self.y > 10.0:
                 self.y = 10.0
-            # TODO: Send int16 values instead of float64 over the wire.
-            self.send_update('set_xyzh', self.x, self.y, self.z, self.h)
+
+            # Convert positions to integers to send over the network in a smaller data type
+            factor = pow(10, pos_float_accuracy)
+            int_x, int_y, int_z = int(self.x * factor), int(self.y * factor), int(self.z * factor)
+            # Send positions over the network
+            self.send_update('set_xyzh', int_x, int_y, int_z, int(self.h))
